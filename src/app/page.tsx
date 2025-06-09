@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import SettingsModal from "./components/SettingsModal";
 
 export default function Home() {
@@ -11,6 +10,8 @@ export default function Home() {
   const [timeLeft, setTimeLeft] = useState({ minutes: 25, seconds: 0 });
   const [isActive, setIsActive] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [totalDuration, setTotalDuration] = useState(25 * 60); // in seconds
   const [settings, setSettings] = useState({
     pomodoro: 25,
     shortBreak: 5,
@@ -20,7 +21,7 @@ export default function Home() {
     sound: "Bell",
     playSoundOnFinish: true,
     alertVolume: 80,
-    theme: "Nighttime Countryside",
+    theme: "Purple",
     showBrowserNotification: false,
   });
 
@@ -52,72 +53,78 @@ export default function Home() {
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
 
-    if (isActive) {
+    if (isActive && startTime) {
       interval = setInterval(() => {
-        setTimeLeft((prevTime) => {
-          if (prevTime.seconds === 0) {
-            if (prevTime.minutes === 0) {
-              setIsActive(false);
+        const now = Date.now();
+        const elapsed = Math.floor((now - startTime) / 1000);
+        const remaining = Math.max(0, totalDuration - elapsed);
 
-              // Play sound when timer finishes
-              if (settings.playSoundOnFinish && audio) {
-                audio.play();
-              }
+        const minutes = Math.floor(remaining / 60);
+        const seconds = remaining % 60;
 
-              // Show browser notification
-              if (
-                settings.showBrowserNotification &&
-                "Notification" in window
-              ) {
-                if (Notification.permission === "granted") {
-                  new Notification("Time is up!", {
-                    body: `${
-                      mode.charAt(0).toUpperCase() + mode.slice(1)
-                    } timer has ended.`,
-                    icon: "/favicon.ico",
-                  });
-                } else if (Notification.permission !== "denied") {
-                  Notification.requestPermission();
-                }
-              }
+        setTimeLeft({ minutes, seconds });
 
-              // Implement Pomodoro sequence logic
-              if (settings.useSequence) {
-                if (mode === "pomodoro") {
-                  // Update completed pomodoros count
-                  const newPomodorosCompleted = settings.pomodorosCompleted + 1;
-                  setSettings((prev) => ({
-                    ...prev,
-                    pomodorosCompleted: newPomodorosCompleted,
-                  }));
+        if (remaining === 0) {
+          setIsActive(false);
+          setStartTime(null);
 
-                  // Check if it's time for a long break (after every 3 pomodoros)
-                  if (newPomodorosCompleted % 3 === 0) {
-                    setMode("long break");
-                    setTimeLeft({ minutes: settings.longBreak, seconds: 0 });
-                  } else {
-                    setMode("short break");
-                    setTimeLeft({ minutes: settings.shortBreak, seconds: 0 });
-                  }
-                } else {
-                  // After any break, go back to pomodoro
-                  setMode("pomodoro");
-                  setTimeLeft({ minutes: settings.pomodoro, seconds: 0 });
-                }
-                
-                // Auto-start the next timer after a short delay
-                setTimeout(() => {
-                  setIsActive(true);
-                }, 1000);
-              }
-
-              return prevTime;
-            }
-            return { minutes: prevTime.minutes - 1, seconds: 59 };
+          // Play sound when timer finishes
+          if (settings.playSoundOnFinish && audio) {
+            audio.play();
           }
-          return { ...prevTime, seconds: prevTime.seconds - 1 };
-        });
-      }, 1000);
+
+          // Show browser notification
+          if (settings.showBrowserNotification && "Notification" in window) {
+            if (Notification.permission === "granted") {
+              new Notification("Time is up!", {
+                body: `${
+                  mode.charAt(0).toUpperCase() + mode.slice(1)
+                } timer has ended.`,
+                icon: "/favicon.ico",
+              });
+            } else if (Notification.permission !== "denied") {
+              Notification.requestPermission();
+            }
+          }
+
+          // Implement Pomodoro sequence logic
+          if (settings.useSequence) {
+            if (mode === "pomodoro") {
+              // Update completed pomodoros count
+              const newPomodorosCompleted = settings.pomodorosCompleted + 1;
+              setSettings((prev) => ({
+                ...prev,
+                pomodorosCompleted: newPomodorosCompleted,
+              }));
+
+              // Check if it's time for a long break (after every 3 pomodoros)
+              if (newPomodorosCompleted % 3 === 0) {
+                setMode("long break");
+                const newDuration = settings.longBreak * 60;
+                setTotalDuration(newDuration);
+                setTimeLeft({ minutes: settings.longBreak, seconds: 0 });
+              } else {
+                setMode("short break");
+                const newDuration = settings.shortBreak * 60;
+                setTotalDuration(newDuration);
+                setTimeLeft({ minutes: settings.shortBreak, seconds: 0 });
+              }
+            } else {
+              // After any break, go back to pomodoro
+              setMode("pomodoro");
+              const newDuration = settings.pomodoro * 60;
+              setTotalDuration(newDuration);
+              setTimeLeft({ minutes: settings.pomodoro, seconds: 0 });
+            }
+
+            // Auto-start the next timer after a short delay
+            setTimeout(() => {
+              setStartTime(Date.now());
+              setIsActive(true);
+            }, 1000);
+          }
+        }
+      }, 100); // Check more frequently for better accuracy
     } else if (interval) {
       clearInterval(interval);
     }
@@ -125,57 +132,108 @@ export default function Home() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isActive, mode, settings, audio]);
+  }, [isActive, startTime, totalDuration, mode, settings, audio]);
 
   useEffect(() => {
     // Reset timer when mode changes
     switch (mode) {
       case "pomodoro":
         setTimeLeft({ minutes: settings.pomodoro, seconds: 0 });
+        setTotalDuration(settings.pomodoro * 60);
         break;
       case "short break":
         setTimeLeft({ minutes: settings.shortBreak, seconds: 0 });
+        setTotalDuration(settings.shortBreak * 60);
         break;
       case "long break":
         setTimeLeft({ minutes: settings.longBreak, seconds: 0 });
+        setTotalDuration(settings.longBreak * 60);
         break;
     }
     setIsActive(false);
+    setStartTime(null);
   }, [mode, settings]);
 
   const toggleTimer = () => {
+    if (!isActive) {
+      // Starting timer - set start time based on current progress
+      const currentTotal = timeLeft.minutes * 60 + timeLeft.seconds;
+      const elapsed = totalDuration - currentTotal;
+      setStartTime(Date.now() - elapsed * 1000);
+    }
     setIsActive(!isActive);
   };
 
   const resetTimer = () => {
     setIsActive(false);
+    setStartTime(null);
     switch (mode) {
       case "pomodoro":
         setTimeLeft({ minutes: settings.pomodoro, seconds: 0 });
+        setTotalDuration(settings.pomodoro * 60);
         break;
       case "short break":
         setTimeLeft({ minutes: settings.shortBreak, seconds: 0 });
+        setTotalDuration(settings.shortBreak * 60);
         break;
       case "long break":
         setTimeLeft({ minutes: settings.longBreak, seconds: 0 });
+        setTotalDuration(settings.longBreak * 60);
         break;
     }
   };
 
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-gradient-to-b from-purple-800 via-purple-700 to-indigo-900">
-      <div className="fixed top-0 left-0 w-full h-full -z-10">
-        <Image
-          src={`/backgrounds/${settings.theme
-            .toLowerCase()
-            .replace(/\s/g, "_")}.jpg`}
-          alt="Background"
-          fill
-          objectFit="cover"
-          className="opacity-50"
-        />
-      </div>
+  // Map theme names to gradient classes
+  const getThemeGradient = (theme: string) => {
+    switch (theme) {
+      case "Purple":
+        return "bg-gradient-to-b from-purple-800 via-purple-700 to-indigo-900";
+      case "Blue":
+        return "bg-gradient-to-b from-blue-800 via-blue-700 to-blue-900";
+      case "Green":
+        return "bg-gradient-to-b from-green-800 via-green-700 to-emerald-900";
+      case "Yellow":
+        return "bg-gradient-to-b from-yellow-600 via-yellow-700 to-orange-800";
+      case "Orange":
+        return "bg-gradient-to-b from-orange-600 via-orange-700 to-red-800";
+      case "Red":
+        return "bg-gradient-to-b from-red-700 via-red-800 to-red-900";
+      case "Pink":
+        return "bg-gradient-to-b from-pink-600 via-pink-700 to-purple-800";
+      default:
+        return "bg-gradient-to-b from-purple-800 via-purple-700 to-indigo-900";
+    }
+  };
 
+  // Handle page visibility changes to sync timer when tab becomes active
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && isActive && startTime) {
+        // Tab became active - force a timer update to sync
+        const now = Date.now();
+        const elapsed = Math.floor((now - startTime) / 1000);
+        const remaining = Math.max(0, totalDuration - elapsed);
+
+        const minutes = Math.floor(remaining / 60);
+        const seconds = remaining % 60;
+
+        setTimeLeft({ minutes, seconds });
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [isActive, startTime, totalDuration]);
+
+  return (
+    <main
+      className={`flex min-h-screen flex-col items-center justify-center p-4 ${getThemeGradient(
+        settings.theme
+      )}`}
+    >
       <div className="z-10 w-full max-w-md flex flex-col items-center">
         {/* Mode selector */}
         <div className="flex space-x-2 bg-white/10 p-1 rounded-full mb-10">

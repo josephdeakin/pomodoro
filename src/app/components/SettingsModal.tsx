@@ -1,5 +1,4 @@
 import { useState, useRef } from "react";
-import Link from "next/link";
 
 interface SettingsProps {
   settings: {
@@ -14,7 +13,18 @@ interface SettingsProps {
     theme: string;
     showBrowserNotification: boolean;
   };
-  setSettings: (settings: any) => void;
+  setSettings: (settings: {
+    pomodoro: number;
+    shortBreak: number;
+    longBreak: number;
+    useSequence: boolean;
+    pomodorosCompleted: number;
+    sound: string;
+    playSoundOnFinish: boolean;
+    alertVolume: number;
+    theme: string;
+    showBrowserNotification: boolean;
+  }) => void;
   onClose: () => void;
 }
 
@@ -42,7 +52,7 @@ export default function SettingsModal({
       sound: "Bell",
       playSoundOnFinish: true,
       alertVolume: 80,
-      theme: "Nighttime Countryside",
+      theme: "Purple",
       showBrowserNotification: false,
     });
   };
@@ -308,12 +318,13 @@ export default function SettingsModal({
                       }
                       className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white appearance-none pr-8"
                     >
-                      <option value="Nighttime Countryside">
-                        Nighttime Countryside
-                      </option>
-                      <option value="Forest">Forest</option>
-                      <option value="Ocean">Ocean</option>
-                      <option value="City">City</option>
+                      <option value="Purple">Purple</option>
+                      <option value="Blue">Blue</option>
+                      <option value="Green">Green</option>
+                      <option value="Yellow">Yellow</option>
+                      <option value="Orange">Orange</option>
+                      <option value="Red">Red</option>
+                      <option value="Pink">Pink</option>
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
                       <svg
