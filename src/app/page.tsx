@@ -22,7 +22,6 @@ export default function Home() {
     playSoundOnFinish: true,
     alertVolume: 80,
     theme: "Purple",
-    showBrowserNotification: false,
   });
 
   // Add audio for timer finish
@@ -33,12 +32,12 @@ export default function Home() {
     if (typeof window !== "undefined") {
       // Map sound names to their correct file paths
       const soundFiles: Record<string, string> = {
-        Bell: "/sounds/bell.mp3",
+        Bell: "/sounds/bellTrim.mp3",
         Geese: "/sounds/geese.wav",
         "Slot Machine": "/sounds/slorMachine.wav",
       };
 
-      const soundFile = soundFiles[settings.sound] || "/sounds/bell.mp3";
+      const soundFile = soundFiles[settings.sound] || "/sounds/bellTrim.mp3";
       const newAudio = new Audio(soundFile);
       setAudio(newAudio);
     }
@@ -71,20 +70,6 @@ export default function Home() {
           // Play sound when timer finishes
           if (settings.playSoundOnFinish && audio) {
             audio.play();
-          }
-
-          // Show browser notification
-          if (settings.showBrowserNotification && "Notification" in window) {
-            if (Notification.permission === "granted") {
-              new Notification("Time is up!", {
-                body: `${
-                  mode.charAt(0).toUpperCase() + mode.slice(1)
-                } timer has ended.`,
-                icon: "/favicon.ico",
-              });
-            } else if (Notification.permission !== "denied") {
-              Notification.requestPermission();
-            }
           }
 
           // Implement Pomodoro sequence logic
