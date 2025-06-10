@@ -136,7 +136,7 @@ export default function SettingsModal({
               <div>
                 <h2 className="text-2xl font-bold text-white">Settings</h2>
                 <p className="text-gray-400 text-sm mt-1">
-                  Customize your Pomodoro experience
+                  Customise your Pomodoro experience
                 </p>
               </div>
               <button
