@@ -79,13 +79,32 @@ export default function SettingsModal({
 
   const playSound = () => {
     // Define sound options as a type to ensure type safety
-    type SoundOption = "Bell" | "Geese" | "Slot Machine";
+    type SoundOption =
+      | "Bell"
+      | "Geese"
+      | "Slot Machine"
+      | "Alert"
+      | "Beep"
+      | "GTA Car Horn"
+      | "Cha Ching"
+      | "New Bell"
+      | "Eagle 🦅🇺🇸"
+      | "Vinyl Rewind"
+      | "Yeah Boy";
 
     // Map sound names to their correct file paths
     const soundFiles: Record<SoundOption, string> = {
       Bell: "/sounds/bellTrim.mp3",
       Geese: "/sounds/geese.wav",
       "Slot Machine": "/sounds/slotMachine.wav",
+      Alert: "sounds/alert.mp3",
+      Beep: "sounds/beep.mp3",
+      "GTA Car Horn": "sounds/carHornGTA.mp3",
+      "Cha Ching": "sounds/chaChing.mp3",
+      "New Bell": "sounds/newBell.mp3",
+      "Eagle 🦅🇺🇸": "sounds/uSAEagle.mp3",
+      "Vinyl Rewind": "sounds/vinylRewind.mp3",
+      "Yeah Boy": "sounds/yeahBoy.mp3",
     };
 
     // Get the correct sound file path with type assertion
@@ -342,6 +361,14 @@ export default function SettingsModal({
                           <option value="Bell">🔔 Bell</option>
                           <option value="Geese">🦢 Geese</option>
                           <option value="Slot Machine">🎰 Slot Machine</option>
+                          <option value="Alert">⚠️ Alert</option>
+                          <option value="Beep">🔊 Beep</option>
+                          <option value="GTA Car Horn">🚗 GTA Car Horn</option>
+                          <option value="Cha Ching">💰 Cha Ching</option>
+                          <option value="New Bell">🛎️ New Bell</option>
+                          <option value="Eagle 🦅🇺🇸">🦅 Eagle 🇺🇸🇺🇸🇺🇸🇺🇸</option>
+                          <option value="Vinyl Rewind">💿 Vinyl Rewind</option>
+                          <option value="Yeah Boy">🎉 Yeah Boy</option>
                         </select>
                         <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
                           <svg
@@ -444,69 +471,81 @@ export default function SettingsModal({
 
               {/* General Tab */}
               {activeTab === "Colour" && (
-                <div className="space-y-6 mt-4">
-                  <div>
-                    <h3 className="text-xl font-semibold text-white mb-4">
-                      Theme
-                    </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                      {[
-                        {
-                          name: "Purple",
-                          color: "from-purple-600 to-indigo-600",
-                        },
-                        { name: "Blue", color: "from-blue-600 to-cyan-600" },
-                        {
-                          name: "Green",
-                          color: "from-green-600 to-emerald-600",
-                        },
-                        {
-                          name: "Yellow",
-                          color: "from-yellow-500 to-orange-500",
-                        },
-                        { name: "Orange", color: "from-orange-500 to-red-500" },
-                        { name: "Red", color: "from-red-600 to-pink-600" },
-                        { name: "Pink", color: "from-pink-600 to-purple-600" },
-                      ].map((theme) => (
-                        <button
-                          key={theme.name}
-                          onClick={() =>
-                            setLocalSettings({
-                              ...localSettings,
-                              theme: theme.name,
-                            })
-                          }
-                          className={`relative p-3 md:p-4 rounded-xl bg-gradient-to-br ${
-                            theme.color
-                          } transition-all duration-200 hover:scale-105 ${
-                            localSettings.theme === theme.name
-                              ? "ring-2 ring-white ring-offset-2 ring-offset-gray-800 shadow-lg"
-                              : "hover:shadow-lg"
-                          }`}
-                        >
-                          <div className="text-center">
-                            <div className="text-white text-xs md:text-sm font-medium">
-                              {theme.name}
+                <div className="relative h-full">
+                  <div className="space-y-6 mt-4">
+                    <div>
+                      <h3 className="text-xl font-semibold text-white mb-4">
+                        Theme
+                      </h3>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        {[
+                          {
+                            name: "Purple",
+                            color: "from-purple-600 to-indigo-600",
+                          },
+                          { name: "Blue", color: "from-blue-600 to-cyan-600" },
+                          {
+                            name: "Green",
+                            color: "from-green-600 to-emerald-600",
+                          },
+                          {
+                            name: "Yellow",
+                            color: "from-yellow-500 to-orange-500",
+                          },
+                          {
+                            name: "Orange",
+                            color: "from-orange-500 to-red-500",
+                          },
+                          { name: "Red", color: "from-red-600 to-pink-600" },
+                          {
+                            name: "Pink",
+                            color: "from-pink-600 to-purple-600",
+                          },
+                        ].map((theme) => (
+                          <button
+                            key={theme.name}
+                            onClick={() =>
+                              setLocalSettings({
+                                ...localSettings,
+                                theme: theme.name,
+                              })
+                            }
+                            className={`relative p-3 md:p-4 rounded-xl bg-gradient-to-br ${
+                              theme.color
+                            } transition-all duration-200 hover:scale-105 ${
+                              localSettings.theme === theme.name
+                                ? "ring-2 ring-white ring-offset-2 ring-offset-gray-800 shadow-lg"
+                                : "hover:shadow-lg"
+                            }`}
+                          >
+                            <div className="text-center">
+                              <div className="text-white text-xs md:text-sm font-medium">
+                                {theme.name}
+                              </div>
                             </div>
-                          </div>
-                          {localSettings.theme === theme.name && (
-                            <div className="absolute -top-1 -right-1 md:-top-2 md:-right-2 w-5 h-5 md:w-6 md:h-6 bg-white rounded-full flex items-center justify-center">
-                              <svg
-                                className="w-3 h-3 md:w-4 md:h-4 text-green-600"
-                                fill="currentColor"
-                                viewBox="0 0 20 20"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
-                            </div>
-                          )}
-                        </button>
-                      ))}
+                            {localSettings.theme === theme.name && (
+                              <div className="absolute -top-1 -right-1 md:-top-2 md:-right-2 w-5 h-5 md:w-6 md:h-6 bg-white rounded-full flex items-center justify-center">
+                                <svg
+                                  className="w-3 h-3 md:w-4 md:h-4 text-green-600"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fillRule="evenodd"
+                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                    clipRule="evenodd"
+                                  />
+                                </svg>
+                              </div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
                     </div>
+                  </div>
+                  {/* Version Info */}
+                  <div className="absolute bottom-0 right-0">
+                    <p className="text-gray-400 text-xs">v 0.0.3</p>
                   </div>
                 </div>
               )}
