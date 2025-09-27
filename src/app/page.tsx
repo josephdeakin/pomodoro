@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import SettingsModal from "./components/SettingsModal";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useTimer } from "@/hooks/useTimer";
@@ -60,44 +60,75 @@ export default function Home() {
     onStartSoundTrigger: handleStartSoundTrigger,
   });
 
+  const themeGradient = useMemo(
+    () => getThemeGradient(settings.theme),
+    [settings.theme]
+  );
+
   return (
     <main
-      className={`flex min-h-screen select-none flex-col items-center justify-center p-4 ${getThemeGradient(
-        settings.theme
-      )}`}
+      className={`flex min-h-screen select-none flex-col items-center justify-center p-4 ${themeGradient}`}
     >
-      <div className="z-10 w-full max-w-md flex flex-col items-center">
-        <div className="flex space-x-2 bg-white/10 p-1 rounded-full mb-10">
-          {(["pomodoro", "short break", "long break"] as const).map(
-            (timerMode) => (
-              <button
-                key={timerMode}
-                className={`px-6 py-2 rounded-full transition-colors ${
-                  mode === timerMode
-                    ? "bg-white text-gray-800"
-                    : "text-white hover:bg-white/10"
-                }`}
-                onClick={() => setMode(timerMode)}
-              >
-                {timerMode}
-              </button>
-            )
-          )}
-        </div>
+      <h1 className="text-2xl text-white/90 mb-8 z-10 font-light text-center">
+        Free Pomodoro Timer
+      </h1>
 
-        <div className="text-white text-9xl font-bold mb-8 font-mono">
+      <div className="z-10 w-full max-w-md flex flex-col items-center">
+        <nav aria-label="Timer mode selection">
+          <div
+            className="flex space-x-2 bg-white/10 p-1 rounded-full mb-10"
+            role="tablist"
+          >
+            {(["pomodoro", "short break", "long break"] as const).map(
+              (timerMode) => (
+                <button
+                  key={timerMode}
+                  className={`px-6 py-2 rounded-full transition-colors ${
+                    mode === timerMode
+                      ? "bg-white text-gray-800"
+                      : "text-white hover:bg-white/10"
+                  }`}
+                  onClick={() => setMode(timerMode)}
+                  role="tab"
+                  aria-selected={mode === timerMode}
+                  aria-controls="timer-display"
+                >
+                  {timerMode}
+                </button>
+              )
+            )}
+          </div>
+        </nav>
+
+        <div
+          id="timer-display"
+          className="text-white text-9xl font-bold mb-8 font-mono"
+          role="timer"
+          aria-live="polite"
+          aria-label={`${timeLeft.minutes} minutes and ${timeLeft.seconds} seconds remaining in ${mode} session`}
+        >
           {String(timeLeft.minutes).padStart(2, "0")}:
           {String(timeLeft.seconds).padStart(2, "0")}
         </div>
 
-        <div className="text-white text-lg mb-4 opacity-80">
+        <div
+          className="text-white text-lg mb-4 opacity-80"
+          role="status"
+          aria-live="polite"
+        >
           Pomodoros completed: {settings.pomodorosCompleted}
         </div>
 
-        <div className="flex space-x-4">
+        <div
+          className="flex space-x-4"
+          role="group"
+          aria-label="Timer controls"
+        >
           <button
             className="bg-white hover:bg-gray-100 text-gray-800 font-bold py-3 px-12 rounded-full text-xl transition-colors"
             onClick={toggleTimer}
+            aria-label={isActive ? "Pause timer" : "Start timer"}
+            aria-pressed={isActive}
           >
             {isActive ? "pause" : "start"}
           </button>
