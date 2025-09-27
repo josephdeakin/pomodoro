@@ -1,6 +1,9 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
+import { useAudio } from "@/hooks/useAudio";
+import { DEFAULT_SETTINGS, SOUND_OPTIONS } from "@/constants/sounds";
+import { THEME_OPTIONS } from "@/utils/theme";
+import type { PomodoroSettings } from "@/types/settings";
 
-// Custom styles for the slider
 const sliderStyles = `
   .slider::-webkit-slider-thumb {
     appearance: none;
@@ -23,29 +26,9 @@ const sliderStyles = `
   }
 `;
 
-interface SettingsProps {
-  settings: {
-    pomodoro: number;
-    shortBreak: number;
-    longBreak: number;
-    useSequence: boolean;
-    pomodorosCompleted: number;
-    sound: string;
-    playSoundOnFinish: boolean;
-    alertVolume: number;
-    theme: string;
-  };
-  setSettings: (settings: {
-    pomodoro: number;
-    shortBreak: number;
-    longBreak: number;
-    useSequence: boolean;
-    pomodorosCompleted: number;
-    sound: string;
-    playSoundOnFinish: boolean;
-    alertVolume: number;
-    theme: string;
-  }) => void;
+interface SettingsModalProps {
+  settings: PomodoroSettings;
+  setSettings: (settings: PomodoroSettings) => void;
   onClose: () => void;
 }
 
@@ -53,10 +36,14 @@ export default function SettingsModal({
   settings,
   setSettings,
   onClose,
-}: SettingsProps) {
+}: SettingsModalProps) {
   const [localSettings, setLocalSettings] = useState({ ...settings });
   const [activeTab, setActiveTab] = useState("Timers");
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const { playSound } = useAudio(
+    localSettings.sound,
+    localSettings.alertVolume
+  );
 
   const handleSave = () => {
     setSettings(localSettings);
@@ -64,73 +51,27 @@ export default function SettingsModal({
   };
 
   const handleReset = () => {
-    setLocalSettings({
-      pomodoro: 25,
-      shortBreak: 5,
-      longBreak: 10,
-      useSequence: true,
-      pomodorosCompleted: 0,
-      sound: "Bell",
-      playSoundOnFinish: true,
-      alertVolume: 80,
-      theme: "Purple",
-    });
+    setLocalSettings({ ...DEFAULT_SETTINGS });
   };
 
-  const playSound = () => {
-    // Define sound options as a type to ensure type safety
-    type SoundOption =
-      | "Bell"
-      | "Geese"
-      | "Slot Machine"
-      | "Alert"
-      | "Beep"
-      | "GTA Car Horn"
-      | "Cha Ching"
-      | "New Bell"
-      | "Eagle 🦅🇺🇸"
-      | "Vinyl Rewind"
-      | "Yeah Boy";
-
-    // Map sound names to their correct file paths
-    const soundFiles: Record<SoundOption, string> = {
-      Bell: "/sounds/bellTrim.mp3",
-      Geese: "/sounds/geese.wav",
-      "Slot Machine": "/sounds/slotMachine.wav",
-      Alert: "sounds/alert.mp3",
-      Beep: "sounds/beep.mp3",
-      "GTA Car Horn": "sounds/carHornGTA.mp3",
-      "Cha Ching": "sounds/chaChing.mp3",
-      "New Bell": "sounds/newBell.mp3",
-      "Eagle 🦅🇺🇸": "sounds/uSAEagle.mp3",
-      "Vinyl Rewind": "sounds/vinylRewind.mp3",
-      "Yeah Boy": "sounds/yeahBoy.mp3",
-    };
-
-    // Get the correct sound file path with type assertion
-    const soundFile: string = soundFiles[localSettings.sound as SoundOption];
-
-    // Create or reuse audio element
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
-    }
-
-    // Set volume and file
-    audioRef.current.volume = localSettings.alertVolume / 100;
-    audioRef.current.src = soundFile;
-
-    // Play sound
-    audioRef.current.play().catch((err) => {
-      console.error("Error playing sound:", err);
-    });
+  const updateSetting = <K extends keyof PomodoroSettings>(
+    key: K,
+    value: PomodoroSettings[K]
+  ) => {
+    setLocalSettings((prev) => ({ ...prev, [key]: value }));
   };
+
+  const tabs = [
+    { name: "Colour", icon: "🎨" },
+    { name: "Timers", icon: "⏱️" },
+    { name: "Sounds", icon: "🔊" },
+  ];
 
   return (
     <>
       <style>{sliderStyles}</style>
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl w-full max-w-2xl shadow-2xl border border-gray-700/50 overflow-hidden">
-          {/* Header */}
           <div className="bg-gradient-to-r from-purple-600/20 to-blue-600/20 p-6 border-b border-gray-700/50">
             <div className="flex justify-between items-center">
               <div>
@@ -142,6 +83,7 @@ export default function SettingsModal({
               <button
                 onClick={onClose}
                 className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10"
+                aria-label="Close settings"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -161,14 +103,9 @@ export default function SettingsModal({
             </div>
           </div>
 
-          {/* Mobile Tab Navigation */}
           <div className="md:hidden border-b border-gray-700/50">
             <nav className="flex">
-              {[
-                { name: "Colour", icon: "🎨" },
-                { name: "Timers", icon: "⏱️" },
-                { name: "Sounds", icon: "🔊" },
-              ].map((tab) => (
+              {tabs.map((tab) => (
                 <button
                   key={tab.name}
                   className={`flex-1 px-4 py-4 transition-all duration-200 flex flex-col items-center space-y-1 ${
@@ -186,14 +123,9 @@ export default function SettingsModal({
           </div>
 
           <div className="flex">
-            {/* Desktop Sidebar Navigation */}
             <div className="hidden md:block w-48 bg-gray-800/50 p-6 border-r border-gray-700/50">
               <nav className="space-y-2">
-                {[
-                  { name: "Colour", icon: "🎨" },
-                  { name: "Timers", icon: "⏱️" },
-                  { name: "Sounds", icon: "🔊" },
-                ].map((tab) => (
+                {tabs.map((tab) => (
                   <button
                     key={tab.name}
                     className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-200 flex items-center space-x-3 ${
@@ -210,104 +142,57 @@ export default function SettingsModal({
               </nav>
             </div>
 
-            {/* Content Area */}
             <div className="flex-1 p-4 md:p-6 h-108 overflow-y-auto">
-              {/* Timers Tab */}
               {activeTab === "Timers" && (
                 <div className="space-y-6 md:space-y-8">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-                    {/* Pomodoro Timer */}
-                    <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm p-6 rounded-2xl border border-gray-600/40 shadow-xl hover:shadow-2xl transition-all duration-300 hover:border-red-500/50 group">
-                      <div className="text-center mb-6">
-                        <h3 className="text-xl font-bold text-white tracking-wide h-14 flex items-center justify-center">
-                          Pomodoro
-                        </h3>
-                      </div>
-                      <div className="space-y-4">
-                        <input
-                          type="number"
-                          min="1"
-                          max="99"
-                          value={localSettings.pomodoro}
-                          onChange={(e) => {
-                            const value = Math.max(
-                              1,
-                              Math.min(99, Number(e.target.value) || 1)
-                            );
-                            setLocalSettings({
-                              ...localSettings,
-                              pomodoro: value,
-                            });
-                          }}
-                          className="w-full bg-gradient-to-br from-gray-900/80 to-black/60 border border-gray-500/50 rounded-xl p-4 text-white text-center text-xl font-bold focus:ring-2 focus:ring-red-500/50 focus:border-red-400 transition-all duration-200 shadow-inner hover:border-gray-400/70 group-hover:border-red-400/50 flex items-center justify-center"
-                        />
-                        <div className="text-gray-300 text-sm text-center font-medium">
-                          minutes
+                    {[
+                      {
+                        key: "pomodoro" as const,
+                        label: "Pomodoro",
+                        color: "red",
+                      },
+                      {
+                        key: "shortBreak" as const,
+                        label: "Short Break",
+                        color: "green",
+                      },
+                      {
+                        key: "longBreak" as const,
+                        label: "Long Break",
+                        color: "blue",
+                      },
+                    ].map(({ key, label, color }) => (
+                      <div
+                        key={key}
+                        className={`bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm p-6 rounded-2xl border border-gray-600/40 shadow-xl hover:shadow-2xl transition-all duration-300 hover:border-${color}-500/50 group`}
+                      >
+                        <div className="text-center mb-6">
+                          <h3 className="text-xl font-bold text-white tracking-wide h-14 flex items-center justify-center">
+                            {label}
+                          </h3>
+                        </div>
+                        <div className="space-y-4">
+                          <input
+                            type="number"
+                            min="1"
+                            max="99"
+                            value={localSettings[key]}
+                            onChange={(e) => {
+                              const value = Math.max(
+                                1,
+                                Math.min(99, Number(e.target.value) || 1)
+                              );
+                              updateSetting(key, value);
+                            }}
+                            className={`w-full bg-gradient-to-br from-gray-900/80 to-black/60 border border-gray-500/50 rounded-xl p-4 text-white text-center text-xl font-bold focus:ring-2 focus:ring-${color}-500/50 focus:border-${color}-400 transition-all duration-200 shadow-inner hover:border-gray-400/70 group-hover:border-${color}-400/50 flex items-center justify-center`}
+                          />
+                          <div className="text-gray-300 text-sm text-center font-medium">
+                            minutes
+                          </div>
                         </div>
                       </div>
-                    </div>
-
-                    {/* Short Break Timer */}
-                    <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm p-6 rounded-2xl border border-gray-600/40 shadow-xl hover:shadow-2xl transition-all duration-300 hover:border-green-500/50 group">
-                      <div className="text-center mb-6">
-                        <h3 className="text-xl font-bold text-white tracking-wide h-14 flex items-center justify-center">
-                          Short Break
-                        </h3>
-                      </div>
-                      <div className="space-y-4">
-                        <input
-                          type="number"
-                          min="1"
-                          max="99"
-                          value={localSettings.shortBreak}
-                          onChange={(e) => {
-                            const value = Math.max(
-                              1,
-                              Math.min(99, Number(e.target.value) || 1)
-                            );
-                            setLocalSettings({
-                              ...localSettings,
-                              shortBreak: value,
-                            });
-                          }}
-                          className="w-full bg-gradient-to-br from-gray-900/80 to-black/60 border border-gray-500/50 rounded-xl p-4 text-white text-center text-xl font-bold focus:ring-2 focus:ring-green-500/50 focus:border-green-400 transition-all duration-200 shadow-inner hover:border-gray-400/70 group-hover:border-green-400/50 flex items-center justify-center"
-                        />
-                        <div className="text-gray-300 text-sm text-center font-medium">
-                          minutes
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Long Break Timer */}
-                    <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm p-6 rounded-2xl border border-gray-600/40 shadow-xl hover:shadow-2xl transition-all duration-300 hover:border-blue-500/50 group">
-                      <div className="text-center mb-6">
-                        <h3 className="text-xl font-bold text-white tracking-wide h-14 flex items-center justify-center">
-                          Long Break
-                        </h3>
-                      </div>
-                      <div className="space-y-4">
-                        <input
-                          type="number"
-                          min="1"
-                          max="99"
-                          value={localSettings.longBreak}
-                          onChange={(e) => {
-                            const value = Math.max(
-                              1,
-                              Math.min(99, Number(e.target.value) || 1)
-                            );
-                            setLocalSettings({
-                              ...localSettings,
-                              longBreak: value,
-                            });
-                          }}
-                          className="w-full bg-gradient-to-br from-gray-900/80 to-black/60 border border-gray-500/50 rounded-xl p-4 text-white text-center text-xl font-bold focus:ring-2 focus:ring-blue-500/50 focus:border-blue-400 transition-all duration-200 shadow-inner hover:border-gray-400/70 group-hover:border-blue-400/50 flex items-center justify-center"
-                        />
-                        <div className="text-gray-300 text-sm text-center font-medium">
-                          minutes
-                        </div>
-                      </div>
-                    </div>
+                    ))}
                   </div>
 
                   <div className="bg-gray-800/30 p-4 md:p-6 rounded-xl border border-gray-700/30">
@@ -325,10 +210,10 @@ export default function SettingsModal({
                           type="checkbox"
                           checked={localSettings.useSequence}
                           onChange={() =>
-                            setLocalSettings({
-                              ...localSettings,
-                              useSequence: !localSettings.useSequence,
-                            })
+                            updateSetting(
+                              "useSequence",
+                              !localSettings.useSequence
+                            )
                           }
                           className="sr-only peer"
                         />
@@ -339,7 +224,6 @@ export default function SettingsModal({
                 </div>
               )}
 
-              {/* Sounds Tab */}
               {activeTab === "Sounds" && (
                 <div className="space-y-6 mt-4">
                   <div>
@@ -351,24 +235,15 @@ export default function SettingsModal({
                         <select
                           value={localSettings.sound}
                           onChange={(e) =>
-                            setLocalSettings({
-                              ...localSettings,
-                              sound: e.target.value,
-                            })
+                            updateSetting("sound", e.target.value)
                           }
                           className="w-full bg-gray-800/50 border border-gray-600 rounded-lg p-3 text-white appearance-none pr-10 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                         >
-                          <option value="Bell">🔔 Bell</option>
-                          <option value="Geese">🦢 Geese</option>
-                          <option value="Slot Machine">🎰 Slot Machine</option>
-                          <option value="Alert">⚠️ Alert</option>
-                          <option value="Beep">🔊 Beep</option>
-                          <option value="GTA Car Horn">🚗 GTA Car Horn</option>
-                          <option value="Cha Ching">💰 Cha Ching</option>
-                          <option value="New Bell">🛎️ New Bell</option>
-                          <option value="Eagle 🦅🇺🇸">🦅 Eagle 🇺🇸🇺🇸🇺🇸🇺🇸</option>
-                          <option value="Vinyl Rewind">💿 Vinyl Rewind</option>
-                          <option value="Yeah Boy">🎉 Yeah Boy</option>
+                          {SOUND_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
                         </select>
                         <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
                           <svg
@@ -406,33 +281,44 @@ export default function SettingsModal({
                     </div>
                   </div>
 
-                  <div className="bg-gray-800/30 p-6 rounded-xl border border-gray-700/30">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-lg font-semibold text-white">
-                          Sound Notifications
-                        </h3>
-                        <p className="text-gray-400 text-sm">
-                          Play sound when timer finishes
-                        </p>
+                  {[
+                    {
+                      key: "playSoundOnFinish" as const,
+                      title: "Sound Notifications",
+                      description: "Play sound when timer finishes",
+                    },
+                    {
+                      key: "playStartSound" as const,
+                      title: "Break Start Sound",
+                      description:
+                        "Play notification sound 3 seconds before break ends",
+                    },
+                  ].map(({ key, title, description }) => (
+                    <div
+                      key={key}
+                      className="bg-gray-800/30 p-6 rounded-xl border border-gray-700/30"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-lg font-semibold text-white">
+                            {title}
+                          </h3>
+                          <p className="text-gray-400 text-sm">{description}</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={localSettings[key]}
+                            onChange={() =>
+                              updateSetting(key, !localSettings[key])
+                            }
+                            className="sr-only peer"
+                          />
+                          <div className="relative w-14 h-7 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-purple-600 peer-checked:to-blue-600"></div>
+                        </label>
                       </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={localSettings.playSoundOnFinish}
-                          onChange={() =>
-                            setLocalSettings({
-                              ...localSettings,
-                              playSoundOnFinish:
-                                !localSettings.playSoundOnFinish,
-                            })
-                          }
-                          className="sr-only peer"
-                        />
-                        <div className="relative w-14 h-7 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-purple-600 peer-checked:to-blue-600"></div>
-                      </label>
                     </div>
-                  </div>
+                  ))}
 
                   <div className="bg-gray-800/30 p-6 rounded-xl border border-gray-700/30">
                     <h3 className="text-lg font-semibold text-white mb-4">
@@ -453,10 +339,7 @@ export default function SettingsModal({
                           max="100"
                           value={localSettings.alertVolume}
                           onChange={(e) =>
-                            setLocalSettings({
-                              ...localSettings,
-                              alertVolume: Number(e.target.value),
-                            })
+                            updateSetting("alertVolume", Number(e.target.value))
                           }
                           className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
                           style={{
@@ -469,7 +352,6 @@ export default function SettingsModal({
                 </div>
               )}
 
-              {/* General Tab */}
               {activeTab === "Colour" && (
                 <div className="relative h-full">
                   <div className="space-y-6 mt-4">
@@ -478,38 +360,10 @@ export default function SettingsModal({
                         Theme
                       </h3>
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                        {[
-                          {
-                            name: "Purple",
-                            color: "from-purple-600 to-indigo-600",
-                          },
-                          { name: "Blue", color: "from-blue-600 to-cyan-600" },
-                          {
-                            name: "Green",
-                            color: "from-green-600 to-emerald-600",
-                          },
-                          {
-                            name: "Yellow",
-                            color: "from-yellow-500 to-orange-500",
-                          },
-                          {
-                            name: "Orange",
-                            color: "from-orange-500 to-red-500",
-                          },
-                          { name: "Red", color: "from-red-600 to-pink-600" },
-                          {
-                            name: "Pink",
-                            color: "from-pink-600 to-purple-600",
-                          },
-                        ].map((theme) => (
+                        {THEME_OPTIONS.map((theme) => (
                           <button
                             key={theme.name}
-                            onClick={() =>
-                              setLocalSettings({
-                                ...localSettings,
-                                theme: theme.name,
-                              })
-                            }
+                            onClick={() => updateSetting("theme", theme.name)}
                             className={`relative p-3 md:p-4 rounded-xl bg-gradient-to-br ${
                               theme.color
                             } transition-all duration-200 hover:scale-105 ${
@@ -543,7 +397,6 @@ export default function SettingsModal({
                       </div>
                     </div>
                   </div>
-                  {/* Version Info */}
                   <div className="absolute bottom-0 right-0">
                     <p className="text-gray-400 text-xs">v 0.0.3</p>
                   </div>
